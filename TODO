@@ -3,9 +3,11 @@ GameLib Roadmap
 0.4:
 * Put functions and variables into one global object (to clean up the global namespace).
 * Move Canvas creation and initialization into the script.
+* Make sure a game only receives input when its canvas has focus.
 
 0.5:
 * Implement loading new resources into the currently running state.
+* Add overridable functions that trigger when the canvas element is focused or blurred (useful to pause or mute a game).
 
 0.6:
 * Add support for importing other scripts.
