@@ -1,0 +1,15 @@
+GameLib Roadmap
+
+0.4:
+* Put functions and variables into one global object (to clean up the global namespace)
+
+0.5:
+* Implement loading new resources into the currently running state
+
+0.6:
+* Add support for loading new scripts right
+
+Longer term 1.0:
+* Fix the resource loading system to respond on each file loaded rather than having some function check several times a second if everything has been loaded.
+* Make sure it works across at least Chrome, Firefox and Opera. Preferably also IE9.
+* Add complete usage and function documentation!
