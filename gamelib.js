@@ -160,11 +160,20 @@ function Resource(filename) {
   this.data = undefined;  //Will contain the actual data (like an Image or Audio instance).
   this.type = 'none';
   this.filename = filename;
+  this.defaultpath = "res/";
+  
+  this.setDefaultPath = function(str) {
+    if (str[str.length-1] != "/") {
+      str += "/";
+    }
+    this.defaultpath = str;
+    Log("Default resource path changed to " + str + ".");
+  }
   
   switch (filename.slice(filename.length-3)) {
     case "ogg": case "mp3":
       var a = document.createElement('audio');
-      a.src = "res/snd/" + filename;
+      a.src = this.defaultpath + filename;
       a.id = filename;
       $('#resources').append(a);
       a.addEventListener("loadeddata", function() {
@@ -178,7 +187,7 @@ function Resource(filename) {
       
       a.onerror = function(e) {
         Log('<span class="red">WARNING: failed loading ' + filename + '. Replacing with placeholder.</span>');
-        a.src = "res/snd/placeholder.ogg";
+        a.src = this.defaultpath + "placeholder.ogg";
         ready = true;
         RES[filename] = this;
         if (LOADBAR) {
@@ -189,7 +198,7 @@ function Resource(filename) {
     
     case "png": case "jpg":
       var a = new Image();
-      a.src = "res/"+filename;
+      a.src = this.defaultpath + filename;
       $(a).load(function() {
         ready = true;
         RES[filename] = this;
