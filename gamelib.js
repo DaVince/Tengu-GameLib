@@ -1,74 +1,93 @@
-/** Tengu HTML5 GameLib
+/** Tengu HTML5 Gamelib
  * By Tengu Dev
  * http://tengudev.com/
  *
  * Coding: Vincent Beers (DaVince) <VincentBeers@gmail.com>
  * 
- * Licensed under the New BSD License (see gamelib-license.txt).
+ * Licensed under the New BSD License (see LICENSE).
  * 
  **/
 
+var Gamelib = [];
+
 /** Globals **/
-var canvas = undefined;
-var STATE = undefined;//Current state
-var STATES = [];     //Contains all states.
-var RES = [];        //Contains all loaded resources.
-  //RES["filename"].tagName: get the tag name so we know the type of resource.
-var FPS = 30;
-var ARGS = "";
-var SW = undefined;  //Screen width
-var SH = undefined;  //Screen height
+Gamelib.canvas = undefined;
+Gamelib.STATE = undefined;//Current state
+Gamelib.STATES = [];     //Contains all states.
+Gamelib.RES = [];        //Contains all loaded resources.
+  //Gamelib.RES["filename"].tagName: get the tag name so we know the type of resource.
+Gamelib.FPS = 30;
+Gamelib.ARGS = "";
+Gamelib.SW = undefined;  //Screen width
+Gamelib.SH = undefined;  //Screen height
 
-var LOADBAR = false; //Show loading bar
-var DEBUG = false;
+Gamelib.LOADBAR = false; //Show loading bar
+Gamelib.DEBUG = false;
 
-var INPUT = undefined;
-var KEYSPRESSED = []; //An array of all keycodes that currently have "keydown" on them.
-var MOUSEPRESSED = [];
+Gamelib.INPUT = undefined;
+Gamelib.KEYSPRESSED = []; //An array of all keycodes that currently have "keydown" on them.
+Gamelib.MOUSEPRESSED = [];
 
+/** Log anything. **/
+Gamelib.log = function(msg) {
+  if (Gamelib.DEBUG)
+    $('#messages').append(msg + "<br>");
+    $("#messages").scrollTop($("#messages").scrollTop() + 100);
+}
 
-/** It Begins **/
-function Main(args) {
+/** Initialize your game **/
+Gamelib.init = function(width, height, args) {
   if (args) {
-    ARGS = args;
-    if (args.search("debug") != -1) DEBUG = true; 
-    if (args.search("progressbar") != -1) LOADBAR = true;
+    Gamelib.ARGS = args.split(" ");
+    if (args.search("debug") != -1) Gamelib.DEBUG = true; 
+    if (args.search("progressbar") != -1) Gamelib.LOADBAR = true;
   }
   
-  canvas = document.getElementById('gamecanvas').getContext('2d');
+  //Create debug panel.
+  if (Gamelib.DEBUG) {
+    var msg = document.createElement("div");
+    msg.id = "messages";
+    msg.innerHTML = '<h1 style="font-size: large; padding: 0;">Message log</h1>';
+    msg.setAttribute("style", "position: fixed; width: 30%; height: 100%; top: 0; right: 0; \
+      border: 1px dotted black; background: rgba(255,255,255,0.7); overflow: auto; \
+      font-family: monospace; font-size: small;");
+    document.body.appendChild(msg);
+    msg.style.position = "fixed";
+    
+    if (args) Gamelib.log("Arguments passed: " + args);
+  }
+  
+  //Create and add the canvas.
+  Gamelib.canvaselem = document.createElement("canvas");
+  Gamelib.canvaselem.id = "gamecanvas";
+  Gamelib.canvaselem.width = width ? width : 640;
+  Gamelib.canvaselem.height = height ? height : 360;
+  $("body").append(Gamelib.canvaselem);
+  Gamelib.log("Created canvas and added to page");
+  
+  try { Gamelib.canvas = Gamelib.canvaselem.getContext('2d'); }
+  catch (e) { Gamelib.log("Couldn't get canvas context: " + e); }
+  
   $('body').append('<div id="resources" style="display: none;"></div>');
-  if (LOADBAR) $('body').append('<span class="loadstatus">Loading progress</span> <progress id="progress" value="0" max="100"></progress>');
+  if (Gamelib.LOADBAR) $('body').append('<div id="progressbar"><span class="loadstatus">\
+      Loading progress</span> <progress id="progress" value="0" max="100"></progress></div>');
   
-  if (DEBUG) {
-    $('body').append('<div id="messages"><h1>Message log</h1></div>');
-    $('#messages').css("height", "200px");
-    $('#messages').css("border", "1px dotted black");
-    $('#messages').css("display", "block");
-    $('#messages').css("margin-top", "1em");
-    $('#messages h1').css("font-size", "large");
-    $('h1').css("padding", "0");
-    $('#messages').css("overflow", "auto");
-    if (args) Log("Arguments passed: " + args);
-  }
+  Gamelib.log("Framerate is " + Gamelib.FPS + " Gamelib.FPS.");
+  Gamelib.SW = Gamelib.canvaselem.width;
+  Gamelib.SH = Gamelib.canvaselem.height;
+  Gamelib.log("Game resolution is " + Gamelib.SW + "x" + Gamelib.SH + " pixels.");
   
-  Log("Framerate is " + FPS + " FPS.");
-  SW = document.getElementById('gamecanvas').width;
-  SH = document.getElementById('gamecanvas').height;
-  Log("Game resolution is " + SW + "x" + SH + " pixels.");
+  Gamelib.INPUT = new Gamelib.Input();
   
-  INPUT = new Input();
-  
-  Log('<br><span style="color: green"><b>Game start!</b></span>');
-  Game();
+  Gamelib.log('<br><span style="color: green"><b>Game start!</b></span>');
 }
 
 
-/** Game state fuction */
-function State(name) {
+/** Game state object */
+Gamelib.State = function(name) {
   //TODO: state reset
-  //TODO: find an easy way to juggle and maintain events throughout the game.
   this.name = name;
-  STATES[this.name] = this;
+  Gamelib.STATES[this.name] = this;
   var startedloading = false;
   this.loaded = false;
   this.paused = false;
@@ -78,8 +97,11 @@ function State(name) {
   this.requiredResources = [];
   this.optionalResources = [];
   this.loadscreenRendered = false;  //Loading screen already rendered.
-
-
+  
+  this.reset = function() {
+    //TODO: make state resetter (but how...?)
+  }
+  
   /** Constantly verify if all resources have been loaded **/
   this.verifyResources = function() {
     var res = this.requiredResources ? this.requiredResources : [];
@@ -87,22 +109,21 @@ function State(name) {
     //First, actually load the resources if they aren't yet. Do this just once.
     if (!startedloading) {
       for (var i = 0; i < res.length; i++) {
-        new Resource(res[i]);
+        new Gamelib.Resource(res[i]);
         startedloading = true;
       }
     }
     //Now get detecting whether all resources are loaded yet.
     for (var i = 0; i < res.length; i++) {
       //If the loop isn't passed, retest it next loop until it is.
-      if (RES[this.requiredResources[i]] == undefined)
+      if (Gamelib.RES[this.requiredResources[i]] == undefined)
         return false;
     }
-    Log(this + ": All requested resources loaded.");
-    canvas.fillStyle = "white";
-    canvas.fillRect(0, 0, SW, SH);
+    Gamelib.log(this + ": All requested resources loaded.");
+    Gamelib.canvas.fillStyle = "white";
+    Gamelib.canvas.fillRect(0, 0, Gamelib.SW, Gamelib.SH);
     return true;
   }
-
 
   /** State loop **/
   this.loop = function() {
@@ -116,37 +137,33 @@ function State(name) {
     else if (!this.loaded) {
       this.loaded = this.verifyResources();
       if (!this.loadscreenRendered) {  //Draw the "Loading..." screen just once.
-        DrawLoadingScreen();
+        Gamelib.drawLoadingScreen();
         this.loadscreenRendered = true;
       }
     }
-    //setTimeout('STATES["' + this.name + '"].loop();', 1000/FPS);
-    
   }
 
   //Start looping this state.
   this.start = function() {
-    Log("<b>State switch: from " + STATE + " to " + this + "</b>");
-    if (STATE) STATE.paused = true;
-    STATE = this;
-    setInterval('STATES["' + this.name + '"].loop();', 1000/FPS);
+    Gamelib.log("<b>State switch: from " + Gamelib.STATE + " to " + this + "</b>");
+    if (Gamelib.STATE) Gamelib.STATE.paused = true;
+    Gamelib.STATE = this;
+    if (this.time == 0) this.onstart();
+    setInterval('Gamelib.STATES["' + this.name + '"].loop();', 1000/Gamelib.FPS);
   }
 
   /** State requires new resources to load. **/
-  //NOTE: make absolutely sure that your resource is loaded at least one update before you use it
-  //or the resource will not be loaded yet!
+  //NOTE: make absolutely sure that your resource is loaded at least one update before you
+  //use it or the resource will not be loaded yet!
   this.loadResources = function(res) {
-    if (LOADBAR) $('#progress').attr("max", res.length);
+    if (Gamelib.LOADBAR) $('#progress').attr("max", res.length);
     startedloading = false;
     this.requiredResources = res;
     this.loaded = false;
   }
 
-  this.update = function() {
-    Log('<span class="red"><b>Game halted.</b> Please override the STATES["' + this
-      + '"].update() and .render() functions to use this state.</span>');
-    this.paused = true;
-  }
+  this.onstart = function() { } //Ran once when the state starts.
+  this.update = function() { }
   this.render = function() { }
   
   this.toString = function() { return this.name; }
@@ -154,7 +171,7 @@ function State(name) {
 
 
 /** Game resource, like sound, an image, etcetera. Type should be auto-determined. **/
-function Resource(filename) {
+Gamelib.Resource = function(filename) {
   var ready = false;  //Will turn true when loaded.
   this.ready = ready;
   this.data = undefined;  //Will contain the actual data (like an Image or Audio instance).
@@ -167,7 +184,7 @@ function Resource(filename) {
       str += "/";
     }
     this.defaultpath = str;
-    Log("Default resource path changed to " + str + ".");
+    Gamelib.log("Default resource path changed to " + str + ".");
   }
   
   switch (filename.slice(filename.length-3)) {
@@ -178,19 +195,19 @@ function Resource(filename) {
       $('#resources').append(a);
       a.addEventListener("loadeddata", function() {
         ready = true;
-        RES[filename] = this;
-        if (LOADBAR) {
+        Gamelib.RES[filename] = this;
+        if (Gamelib.LOADBAR) {
           $('#progress').attr("value", $('#progress').attr("value")+1);
         }
-        Log("file: loaded sound " + filename);
+        Gamelib.log("file: loaded sound " + filename);
       }, true);
       
       a.onerror = function(e) {
-        Log('<span class="red">WARNING: failed loading ' + filename + '. Replacing with placeholder.</span>');
+        Gamelib.log('<span class="red">WARNING: failed loading ' + filename + '. Replacing with placeholder.</span>');
         a.src = this.defaultpath + "placeholder.ogg";
         ready = true;
-        RES[filename] = this;
-        if (LOADBAR) {
+        Gamelib.RES[filename] = this;
+        if (Gamelib.LOADBAR) {
           $('#progress').attr("value", $('#progress').attr("value")+1);
         }
       }
@@ -201,11 +218,11 @@ function Resource(filename) {
       a.src = this.defaultpath + filename;
       $(a).load(function() {
         ready = true;
-        RES[filename] = this;
-        if (LOADBAR) {
+        Gamelib.RES[filename] = this;
+        if (Gamelib.LOADBAR) {
           $('#progress').attr("value", $('#progress').attr("value")+1);
         }
-        Log("file: loaded image " + filename);
+        Gamelib.log("file: loaded image " + filename);
       });
     break;
       
@@ -219,47 +236,41 @@ function Resource(filename) {
 }
 
 
-function DrawLoadingScreen() {
-  canvas.fillStyle = "rgba(0,0,0,0.5)";
-  canvas.fillRect(0,0,SW,SH);
+Gamelib.drawLoadingScreen = function() {
+  Gamelib.canvas.fillStyle = "rgba(0,0,0,0.5)";
+  Gamelib.canvas.fillRect(0,0,Gamelib.SW,Gamelib.SH);
 
-  canvas.font = '30px sans-serif';
-  canvas.fillStyle = "black";
-  var textsize = canvas.measureText("Loading...");
-  canvas.fillText("Loading...", (SW-textsize.width)/2, SH/2-11);
-  canvas.fillText("Loading...", (SW-textsize.width)/2, SH/2-9);
-  canvas.fillText("Loading...", (SW-textsize.width)/2-1, SH/2-10);
-  canvas.fillText("Loading...", (SW-textsize.width)/2+1, SH/2-10);
-  canvas.fillText("Loading...", (SW-textsize.width)/2-1, SH/2-11);
-  canvas.fillText("Loading...", (SW-textsize.width)/2-1, SH/2-9);
-  canvas.fillText("Loading...", (SW-textsize.width)/2+1, SH/2-11);
-  canvas.fillText("Loading...", (SW-textsize.width)/2+1, SH/2-9);
+  Gamelib.canvas.font = '30px sans-serif';
+  Gamelib.canvas.fillStyle = "black";
+  var textsize = Gamelib.canvas.measureText("Loading...");
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2, Gamelib.SH/2-11);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2, Gamelib.SH/2-9);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2-1, Gamelib.SH/2-10);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2+1, Gamelib.SH/2-10);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2-1, Gamelib.SH/2-11);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2-1, Gamelib.SH/2-9);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2+1, Gamelib.SH/2-11);
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2+1, Gamelib.SH/2-9);
 
-  canvas.fillStyle = "white";
-  var textsize = canvas.measureText("Loading...");
-  canvas.fillText("Loading...", (SW-textsize.width)/2, SH/2-10);
-  canvas.font = '12px sans-serif';
-}
-
-
-function Log(msg) {
-  if (DEBUG)
-    $('#messages').append(msg + "<br>");
-    $("#messages").scrollTop($("#messages").scrollTop() + 100);
+  Gamelib.canvas.fillStyle = "white";
+  var textsize = Gamelib.canvas.measureText("Loading...");
+  Gamelib.canvas.fillText("Loading...", (Gamelib.SW-textsize.width)/2, Gamelib.SH/2-10);
+  Gamelib.canvas.font = '12px sans-serif';
 }
 
 
 
-function Input() {
+/** Input handler. DO NOT USE THIS DIRECTLY! Use the Gamelib.INPUT instance instead. **/
+Gamelib.Input = function() {
   var mouseX = 0;
   var mouseY = 0;
   
   //Bind input to events
   /** Keyboard **/
   $(document).keydown(function(e) {
-    if (!KEYSPRESSED[e.which]) {
-      KEYSPRESSED[e.which] = true;
-      Log("input: key " + e.which + " pressed.");
+    if (!Gamelib.KEYSPRESSED[e.which]) {
+      Gamelib.KEYSPRESSED[e.which] = true;
+      Gamelib.log("input: key " + e.which + " pressed.");
       
       //Prevent *some* default keys like tab
       switch (e.which) {
@@ -270,8 +281,8 @@ function Input() {
   });
   
   $(document).keyup(function(e) {
-    Log("input: key " + e.which + " released.");
-    KEYSPRESSED[e.which] = false;
+    Gamelib.log("input: key " + e.which + " released.");
+    Gamelib.KEYSPRESSED[e.which] = false;
   });
   
   
@@ -287,16 +298,16 @@ function Input() {
   
   $("#gamecanvas").mousedown(function(e) {
     $("#gamecanvas").focus();
-    Log("input: clicked mouse btn " + e.which + " on point " + mouseX + "," + mouseY + " on canvas.");
-    MOUSEPRESSED[e.which] = true; //1 = left button; 2 =  middle; 3 = right
+    Gamelib.log("input: clicked mouse btn " + e.which + " on point " + mouseX + "," + mouseY + " on canvas.");
+    Gamelib.MOUSEPRESSED[e.which] = true; //1 = left button; 2 =  middle; 3 = right
   });
   
   $("#gamecanvas").mouseup(function(e) {
-    Log("input: released mouse btn " + e.which + " on point " + mouseX + "," + mouseY + " on canvas.");
-    MOUSEPRESSED[e.which] = false; //1 = left button; 2 =  middle; 3 = right
+    Gamelib.log("input: released mouse btn " + e.which + " on point " + mouseX + "," + mouseY + " on canvas.");
+    Gamelib.MOUSEPRESSED[e.which] = false; //1 = left button; 2 =  middle; 3 = right
   });
   
-  Log("input: bound keyboard and mouse events.");
+  Gamelib.log("input: bound keyboard and mouse events.");
   
   
   this.getMouseX = function() {
@@ -308,25 +319,25 @@ function Input() {
   }
   
   this.isMouseButtonPressed = function(btn) {
-    return MOUSEPRESSED[btn];
+    return Gamelib.MOUSEPRESSED[btn];
   }
   
   /** Convenience function for the most common keys. **/
   this.isKeyPressed = function(key) {
     switch(key) {
-      case "left": return KEYSPRESSED[37]; break;
-      case "right": return KEYSPRESSED[39]; break;
-      case "up": return KEYSPRESSED[38]; break;
-      case "down": return KEYSPRESSED[40]; break;
-      case "space": return KEYSPRESSED[32]; break;
-      case "enter": return KEYSPRESSED[13]; break;
-      case "shift": return KEYSPRESSED[16]; break;
-      case "ctrl": case "control": return KEYSPRESSED[17]; break;
-      case "W": return KEYSPRESSED[87]; break;
-      case "A": return KEYSPRESSED[65]; break;
-      case "S": return KEYSPRESSED[83]; break;
-      case "D": return KEYSPRESSED[68]; break;
-      default: return KEYSPRESSED[key];  //Just use the keycode otherwise
+      case "left": return Gamelib.KEYSPRESSED[37]; break;
+      case "right": return Gamelib.KEYSPRESSED[39]; break;
+      case "up": return Gamelib.KEYSPRESSED[38]; break;
+      case "down": return Gamelib.KEYSPRESSED[40]; break;
+      case "space": return Gamelib.KEYSPRESSED[32]; break;
+      case "enter": return Gamelib.KEYSPRESSED[13]; break;
+      case "shift": return Gamelib.KEYSPRESSED[16]; break;
+      case "ctrl": case "control": return Gamelib.KEYSPRESSED[17]; break;
+      case "W": return Gamelib.KEYSPRESSED[87]; break;
+      case "A": return Gamelib.KEYSPRESSED[65]; break;
+      case "S": return Gamelib.KEYSPRESSED[83]; break;
+      case "D": return Gamelib.KEYSPRESSED[68]; break;
+      default: return Gamelib.KEYSPRESSED[key];  //Just use the keycode otherwise
     }
   }
 }
