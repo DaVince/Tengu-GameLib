@@ -2,19 +2,39 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Tengu GameLib test page</title>
+  <title>Tengu Gamelib test page</title>
   <script src="jquery.js"></script>
   <script src="gamelib.js"></script>
 </head>
 
 <body>
   This page is used to test if the game library works (on your browser). It can
-  also be used as a simple template to load the library.
+  also be used as a simple template for new games.
   
   <script type="text/javascript">
-    GameLib.init(640, 360, "debug progressbar");
+    Gamelib.init(640, 360, "debug progressbar");
+    var gl = Gamelib; //Convenience! gl stands for Gamelib, not OpenGL. :P
+    
+    //Create state and give it render commands
+    new gl.State("test state"); //I swear, this is not OpenGL!
+    
+    gl.STATES["test state"].update = function() {
+      this.vars.x = gl.INPUT.getMouseX();
+      this.vars.y = gl.INPUT.getMouseY()+10;
+    }
+    
+    gl.STATES["test state"].render = function() {
+      gl.canvas.fillStyle = "#bbb";
+      gl.canvas.fillRect(0, 0, gl.SW, gl.SH);
+      gl.canvas.fillStyle = "#888";
+      gl.canvas.fillRect(0, gl.SH/4, gl.SW, gl.SH/2);
+      gl.canvas.font = "18pt sans-serif";
+      gl.canvas.textAlign = "center";
+      gl.canvas.fillStyle = "darkblue";
+      gl.canvas.fillText("Gamelib started!", this.vars.x, this.vars.y);
+    }
+    
+    gl.STATES["test state"].start();  //Let the fun begin!
   </script>
-  
-  
 </body>
 </html>
