@@ -1,0 +1,95 @@
+Quick function tutorial
+Written by Vincent Beers (DaVince) <VincentBeers@gmail.com>
+
+===============
+BEFORE WE BEGIN
+
+Remember that *all* functions and variables belonging to Gamelib all go into a
+single object: Gamelib. I have done this to keep Javascript's global namespace
+as clean as possible so it should clash with no other scripts possibly running
+on the web page.
+
+You can choose to make life easier by shortening the name, like so:
+var gl = Gamelib;
+
+Of course, in this case, you have to make sure there are no other variables with
+the name gl in any other scripts.
+
+
+==============
+STATE MANAGING
+
+You can easily add a state by doing:
+  new Gamelib.State ("name");
+
+This state will now be available from the global STATES variable, like so:
+  Gamelib.STATES["name"]
+
+Of course, if you do var a = new Gamelib.State("a"), said state will also be
+available in var a.
+
+Resources can now be preloaded into the state by using:
+  Gamelib.STATES["name"].loadResources(["path/to/file1.png", "to/file2.ogg"]);
+
+You can tell the state what to do in its rendering or updating cycles by
+overloading the following two functions:
+  Gamelib.STATES["name"].update = function() { ...
+  Gamelib.STATES["name"].render = function() { ...
+
+You can also have a function that runs only once, ever, when you start it:
+  Gamelib.STATES["name"].onstart = function () { ...
+
+The currently running state is also stored in the global STATE variable, which
+makes it easy to just access it as follows inside its update or render cycles:
+  Gamelib.STATE
+
+To run a state, do:
+  Gamelib.STATES["name"].start()
+
+When starting a new state, the previous state is paused, so this is also the
+main function used to simply switch between states. When you start() the old
+state, it will simply resume where it left off.
+
+If you want the state to start afresh, a Gamelib.STATE.reset() will be
+implemented in a next version.
+
+
+==================
+MANAGING RESOURCES
+
+When a state requires a resource (like a picture or a sound), this is passed to
+the state and the engine will show a "Loading" screen until all resources have
+been loaded. Once a resource fails to load, it will load a fallback file in-
+stead.
+
+Resources that have been loaded (succesfully or not) can be accessed like this:
+  RES["filename"]
+
+Sounds are automatically read from the directory res/snd. Pictures are
+(currently) simply read from the res directory and do not support fallback
+placeholders yet.
+
+RES["filename"] will return a simple HTML node which you can then give instruc-
+tions, so if it's a picture, you can do things like:
+  RES["filename.png"].src
+
+
+==============
+INPUT HANDLING
+
+Both the mouse and keyboard are supported. They are accessed through the global
+variable INPUT, which consists of the following methods:
+  getMouseX()
+  getMouseY()
+  isMouseButtonPressed(number)
+  isKeyPressed(keycode or label as string)
+
+isKeyPressed supports the following labels for the most commonly used keys:
+  left right up down space enter shift ctrl control W A S D
+
+isKeyPressed constantly returns true if the key is pressed for each frame the
+game is running, so make sure to check for that. Better control over pressing
+and releasing keys will probably become available.
+
+If you need direct control over the input event managers instead, they are
+available in $(document) for key input and $("#gamecanvas") for mouse input.
