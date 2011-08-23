@@ -18,6 +18,8 @@
     //Create state and give it render commands
     new gl.State("test state"); //I swear, this is not OpenGL!
     
+    gl.STATES["test state"].loadResources(["placeholder.png"]);
+    
     gl.STATES["test state"].update = function() {
       this.vars.x = gl.INPUT.getMouseX();
       this.vars.y = gl.INPUT.getMouseY()+10;
@@ -32,6 +34,7 @@
       gl.canvas.textAlign = "center";
       gl.canvas.fillStyle = "darkblue";
       gl.canvas.fillText("Gamelib started!", this.vars.x, this.vars.y);
+      gl.canvas.drawImage(gl.RES["placeholder.png"], 10, 10);
     }
     
     gl.STATES["test state"].start();  //Let the fun begin!

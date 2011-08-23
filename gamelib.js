@@ -224,14 +224,14 @@ Gamelib.Resource = function(filename) {
       var a = new Image();
       a.src = this.defaultpath + filename;
       Gamelib.log("File path: " + a.src);
-      $(a).load(function() {
+      a.onload = function() {
         ready = true;
         Gamelib.RES[filename] = this;
         if (Gamelib.LOADBAR) {
           $('#progress').attr("value", $('#progress').attr("value")+1);
         }
         Gamelib.log("file: loaded image " + filename);
-      });
+      };
     break;
       
 
