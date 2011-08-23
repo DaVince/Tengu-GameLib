@@ -13,31 +13,31 @@
   
   <script type="text/javascript">
     Gamelib.init(640, 360, "debug progressbar");
-    var gl = Gamelib; //Convenience! gl stands for Gamelib, not OpenGL. :P
+    var g = Gamelib; //Convenience! g stands for Gamelib.
     
     //Create state and give it render commands
-    new gl.State("test state"); //I swear, this is not OpenGL!
+    new g.State("test state");
     
-    gl.STATES["test state"].loadResources(["placeholder.png"]);
+    g.STATES["test state"].loadResources(["placeholder.png"]);
     
-    gl.STATES["test state"].update = function() {
-      this.vars.x = gl.INPUT.getMouseX();
-      this.vars.y = gl.INPUT.getMouseY()+10;
+    g.STATES["test state"].update = function() {
+      this.vars.x = g.INPUT.getMouseX();
+      this.vars.y = g.INPUT.getMouseY()+10;
     }
     
-    gl.STATES["test state"].render = function() {
-      gl.canvas.fillStyle = "#bbb";
-      gl.canvas.fillRect(0, 0, gl.SW, gl.SH);
-      gl.canvas.fillStyle = "#888";
-      gl.canvas.fillRect(0, gl.SH/4, gl.SW, gl.SH/2);
-      gl.canvas.font = "18pt sans-serif";
-      gl.canvas.textAlign = "center";
-      gl.canvas.fillStyle = "darkblue";
-      gl.canvas.fillText("Gamelib started!", this.vars.x, this.vars.y);
-      gl.canvas.drawImage(gl.RES["placeholder.png"], 10, 10);
+    g.STATES["test state"].render = function() {
+      g.canvas.fillStyle = "#bbb";
+      g.canvas.fillRect(0, 0, g.SW, g.SH);
+      g.canvas.fillStyle = "#888";
+      g.canvas.fillRect(0, g.SH/4, g.SW, g.SH/2);
+      g.canvas.font = "18pt sans-serif";
+      g.canvas.textAlign = "center";
+      g.canvas.fillStyle = "darkblue";
+      g.canvas.fillText("Gamelib started!", this.vars.x, this.vars.y);
+      g.canvas.drawImage(g.RES["placeholder.png"], 10, 10);
     }
     
-    gl.STATES["test state"].start();  //Let the fun begin!
+    g.STATES["test state"].start();  //Let the fun begin!
   </script>
 </body>
 </html>
