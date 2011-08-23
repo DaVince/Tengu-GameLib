@@ -96,28 +96,31 @@ Gamelib.State = function(name) {
 
   this.requiredResources = [];
   this.optionalResources = [];
+  this.loadscreen = Gamelib.drawLoadingScreen;  //Define loading screen function
   this.loadscreenRendered = false;  //Loading screen already rendered.
   
   this.reset = function() {
     //TODO: make state resetter (but how...?)
   }
   
-  /** Constantly verify if all resources have been loaded **/
+  /** Verify if all required resources have been loaded **/
   this.verifyResources = function() {
-    var res = this.requiredResources ? this.requiredResources : [];
+    var res = this.requiredResources;
 
     //First, actually load the resources if they aren't yet. Do this just once.
     if (!startedloading) {
       for (var i = 0; i < res.length; i++) {
         new Gamelib.Resource(res[i]);
         startedloading = true;
+        Gamelib.log("Started loading resource: " + res[i]);
       }
     }
     //Now get detecting whether all resources are loaded yet.
     for (var i = 0; i < res.length; i++) {
-      //If the loop isn't passed, retest it next loop until it is.
-      if (Gamelib.RES[this.requiredResources[i]] == undefined)
+      if (Gamelib.RES[this.requiredResources[i]] == undefined) {
+        //Gamelib.log("Resource amount: " + Gamelib.RES.length);
         return false;
+      }
     }
     Gamelib.log(this + ": All requested resources loaded.");
     Gamelib.canvas.fillStyle = "white";
@@ -125,7 +128,7 @@ Gamelib.State = function(name) {
     return true;
   }
 
-  /** State loop **/
+  /** State loop & resources loaded check **/
   this.loop = function() {
     if (this.loaded && !this.paused) {
       this.update();
@@ -136,8 +139,11 @@ Gamelib.State = function(name) {
     //State didn't report it was loaded, so resources have to load first
     else if (!this.loaded) {
       this.loaded = this.verifyResources();
+      //this.paused = this.loaded;
+      //Gamelib.log(this.loaded);
+      
       if (!this.loadscreenRendered) {  //Draw the "Loading..." screen just once.
-        Gamelib.drawLoadingScreen();
+        this.loadscreen();
         this.loadscreenRendered = true;
       }
     }
@@ -152,13 +158,13 @@ Gamelib.State = function(name) {
     setInterval('Gamelib.STATES["' + this.name + '"].loop();', 1000/Gamelib.FPS);
   }
 
-  /** State requires new resources to load. **/
+  /** Queues the resources to load that this state requires. **/
   //NOTE: make absolutely sure that your resource is loaded at least one update before you
   //use it or the resource will not be loaded yet!
   this.loadResources = function(res) {
     if (Gamelib.LOADBAR) $('#progress').attr("max", res.length);
     startedloading = false;
-    this.requiredResources = res;
+    for (var i = 0; i < res.length; i++) this.requiredResources.push(res[i]);
     this.loaded = false;
   }
 
@@ -187,7 +193,7 @@ Gamelib.Resource = function(filename) {
     Gamelib.log("Default resource path changed to " + str + ".");
   }
   
-  switch (filename.slice(filename.length-3)) {
+  switch (filename.slice(-3)) {
     case "ogg": case "mp3":
       var a = document.createElement('audio');
       a.src = this.defaultpath + filename;
@@ -203,7 +209,8 @@ Gamelib.Resource = function(filename) {
       }, true);
       
       a.onerror = function(e) {
-        Gamelib.log('<span class="red">WARNING: failed loading ' + filename + '. Replacing with placeholder.</span>');
+        Gamelib.log('<span class="red">WARNING: failed loading ' + this.defaultpath +
+                filename + '. Replacing with placeholder.</span>');
         a.src = this.defaultpath + "placeholder.ogg";
         ready = true;
         Gamelib.RES[filename] = this;
@@ -216,6 +223,7 @@ Gamelib.Resource = function(filename) {
     case "png": case "jpg":
       var a = new Image();
       a.src = this.defaultpath + filename;
+      Gamelib.log("File path: " + a.src);
       $(a).load(function() {
         ready = true;
         Gamelib.RES[filename] = this;
