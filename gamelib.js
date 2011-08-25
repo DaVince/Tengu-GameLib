@@ -132,9 +132,9 @@ Gamelib.State = function(name) {
   this.loop = function() {
     if (this.loaded && !this.paused) {
       if (this.time == 0) this.onstart();
+      this.time++;
       this.update();
       this.render();
-      this.time++;
     }
 
     //State didn't report it was loaded, so resources have to load first
