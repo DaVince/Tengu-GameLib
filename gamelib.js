@@ -131,6 +131,7 @@ Gamelib.State = function(name) {
   /** State loop & resources loaded check **/
   this.loop = function() {
     if (this.loaded && !this.paused) {
+      if (this.time == 0) this.onstart();
       this.update();
       this.render();
       this.time++;
@@ -154,7 +155,6 @@ Gamelib.State = function(name) {
     Gamelib.log("<b>State switch: from " + Gamelib.STATE + " to " + this + "</b>");
     if (Gamelib.STATE) Gamelib.STATE.paused = true;
     Gamelib.STATE = this;
-    if (this.time == 0) this.onstart();
     setInterval('Gamelib.STATES["' + this.name + '"].loop();', 1000/Gamelib.FPS);
   }
 
