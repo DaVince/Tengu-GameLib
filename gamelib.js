@@ -223,7 +223,7 @@ Gamelib.Resource = function(filename) {
     case "png": case "jpg":
       var a = new Image();
       a.src = this.defaultpath + filename;
-      Gamelib.log("File path: " + a.src);
+      //Gamelib.log("File path: " + a.src);
       a.onload = function() {
         ready = true;
         Gamelib.RES[filename] = this;
