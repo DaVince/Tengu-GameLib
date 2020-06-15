@@ -1,4 +1,8 @@
 Tengu GameLib
+=============
+
+This project is no longer being worked on and was never in a remotely finished state of development.
+
 Copyright (c) Tengu Dev.
 Coding by Vincent Beers <VincentBeers@gmail.com> or <davince@tengudev.com>
 
